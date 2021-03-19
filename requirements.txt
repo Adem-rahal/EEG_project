@@ -1,0 +1,8 @@
+tqdm==4.56.0
+PennyLane==0.14.1
+matplotlib==3.1.2
+numpy==1.20.1
+opencv_contrib_python==4.4.0.46
+PennyLane_qiskit==0.14.0
+PennyLane_Forest==0.14.0
+pyOpenBCI==0.13
