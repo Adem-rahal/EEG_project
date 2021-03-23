@@ -1,1 +1,1 @@
-# EEG_project
+# QBCI
