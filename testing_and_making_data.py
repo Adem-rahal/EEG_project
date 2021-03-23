@@ -79,7 +79,6 @@ streams = resolve_stream('type', 'EEG')
 # create a new inlet to read from the stream
 inlet = StreamInlet(streams[0])
 
-print("oui")
 WIDTH = 800
 HEIGHT = 800
 SQ_SIZE = 50
@@ -112,7 +111,7 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
     fps_counter.append(time.time() - last_print)
     last_print = time.time()
     cur_raw_hz = 1/(sum(fps_counter)/len(fps_counter))
-    # print(cur_raw_hz)
+    print(cur_raw_hz)
 
     env = np.zeros((WIDTH, HEIGHT, 3))
 
@@ -128,6 +127,7 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
     with torch.no_grad():
         network_input = torch.tensor([channel_data])
         out = model(network_input)
+        out = torch.softmax(out,dim=1)
         print(out)
         
         
@@ -164,7 +164,7 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
 
 
     
-
+exit()
 #plt.plot(channel_datas[0][0])
 #plt.show()
 
