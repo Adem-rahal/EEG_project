@@ -50,10 +50,10 @@ model = Model()
 model.load_state_dict(torch.load("best_model/classical/E_02-A_49.34%-L_1.023.pth"))
 model.eval()
 
-# test = torch.rand((32,8,60))
-test = np.array((32,8,60))
-print(model(test))
+test = torch.rand((32,8,60))
 
+
+reshape = (-1, 8, 60)
 '''
 
 model = torch.load(MODEL_NAME, map_location=torch.device('cpu'))
@@ -79,6 +79,7 @@ streams = resolve_stream('type', 'EEG')
 # create a new inlet to read from the stream
 inlet = StreamInlet(streams[0])
 
+print("oui")
 WIDTH = 800
 HEIGHT = 800
 SQ_SIZE = 50
@@ -111,7 +112,7 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
     fps_counter.append(time.time() - last_print)
     last_print = time.time()
     cur_raw_hz = 1/(sum(fps_counter)/len(fps_counter))
-    print(cur_raw_hz)
+    # print(cur_raw_hz)
 
     env = np.zeros((WIDTH, HEIGHT, 3))
 
@@ -119,12 +120,17 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
     env[WIDTH//2-5:WIDTH//2+5,:,:] = vertical_line
     env[square['y1']:square['y2'], square['x1']:square['x2']] = box
 
+
     cv2.imshow('', env)
     cv2.waitKey(1)
 
-    network_input = np.array(channel_data).reshape(reshape)
-    out = model.predict(network_input)
-    print(out[0])
+
+    with torch.no_grad():
+        network_input = torch.tensor([channel_data])
+        out = model(network_input)
+        print(out)
+        
+        
 
     if BOX_MOVE == "random":
         move = random.choice([-1,0,1])
@@ -132,7 +138,8 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
         square['x2'] += move
 
     elif BOX_MOVE == "model":
-        choice = np.argmax(out)
+        choice = torch.argmax(out)
+        print(f"choice, {choice}")
         if choice == 0:
             if ACTION == "left":
                 correct += 1
@@ -153,14 +160,15 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
             none += 1
 
     total += 1
-
-
     channel_datas.append(channel_data)
+
+
+    
 
 #plt.plot(channel_datas[0][0])
 #plt.show()
 
-datadir = "data"
+datadir = "adem_data"
 if not os.path.exists(datadir):
     os.mkdir(datadir)
 
@@ -181,5 +189,5 @@ for action in ['left', 'right', 'none']:
 print(ACTION, correct/total)
 print(f"left: {left/total}, right: {right/total}, none: {none/total}")
 
-with open("accuracies.csv", "a") as f:
-    f.write(f"{int(time.time())},{ACTION},{correct/total},{MODEL_NAME},{left/total},{right/total},{none/total}\n")
+# with open("accuracies.csv", "a") as f:
+#     f.write(f"{int(time.time())},{ACTION},{correct/total},{MODEL_NAME},{left/total},{right/total},{none/total}\n")

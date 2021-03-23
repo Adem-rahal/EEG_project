@@ -160,10 +160,10 @@ class Model(nn.Module):
 
 ##################################### HYPERPARAMETERS ##########################################################
 
-LR = 2e-5
-EPOCH = 10
+LR = 5e-4  #5e-4,
+EPOCH = 4
 BATCH_SIZE = 128
-FRACTION = 1           #value between 0-1
+FRACTION = 0.5           #value between 0-1
 NUM_WORKERS = 8
 DECAY = 1e-4
 
