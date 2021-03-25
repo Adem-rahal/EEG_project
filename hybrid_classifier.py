@@ -83,31 +83,64 @@ weights_shape= { "weights": [EMBEDDING_LAYERS, NUM_WIRES, 3] }
         
 qlayer = qml.qnn.TorchLayer(circuit, weights_shape)
 
-
-class Model(nn.Module):
+class Model(nn.Module):     
     def __init__(self, channels: int=8, n_classes: int=3)->None:
         super(Model,self).__init__()
         self.features = nn.Sequential(
-            nn.Conv1d(channels,64,kernel_size=3,stride=1),nn.ReLU(),nn.Dropout(0.4),
-            nn.Conv1d(64,128,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),
-            nn.Conv1d(128,256,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.4),
+            nn.Conv1d(channels,32,kernel_size=2),nn.ReLU(),nn.BatchNorm1d(32),nn.MaxPool1d(2),
+            nn.Conv1d(32,32,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            nn.Conv1d(32,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),
+            nn.Conv1d(64,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            nn.Conv1d(64,128,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
+            # nn.Conv1d(128,128,kernel_size=1,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            # nn.Conv1d(128,256,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
+            # nn.Conv1d(256,256,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            # nn.Conv1d(256,512,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
+            # nn.Conv1d(512,512,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
             nn.Flatten(),
             #nn.Conv2d(256,512,kernel_size=3,stride=1,padding=0),nn.BatchNorm2d(512),nn.ReLU(),
         )
-        self.hybrid_classifier = nn.Sequential(
-            nn.Linear(768,512),nn.ReLU(),nn.Dropout(0.4),
-            nn.Linear(512,n_classes),
+        self.classifier = nn.Sequential(
+            nn.Linear(128,128),nn.ReLU(),nn.Dropout(0.5),
+            nn.Linear(128,32),nn.ReLU(),
+            nn.Linear(32,n_classes),nn.ReLU(),
             qlayer,
             nn.Linear(n_classes,n_classes),
+
         )
 
     def forward (self, x: torch.Tensor)->torch.Tensor:
         # print(x.size())
         x=self.features(x)
         # print(x.size())
-        x=self.hybrid_classifier(x)
+        x=self.classifier(x)
         # print(x.size())
         return x
+
+# class Model(nn.Module):
+#     def __init__(self, channels: int=8, n_classes: int=3)->None:
+#         super(Model,self).__init__()
+#         self.features = nn.Sequential(
+#             nn.Conv1d(channels,64,kernel_size=3,stride=1),nn.ReLU(),nn.Dropout(0.4),
+#             nn.Conv1d(64,128,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),
+#             nn.Conv1d(128,256,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.4),
+#             nn.Flatten(),
+#             #nn.Conv2d(256,512,kernel_size=3,stride=1,padding=0),nn.BatchNorm2d(512),nn.ReLU(),
+#         )
+#         self.hybrid_classifier = nn.Sequential(
+#             nn.Linear(768,512),nn.ReLU(),nn.Dropout(0.4),
+#             nn.Linear(512,n_classes),
+#             qlayer,
+#             nn.Linear(n_classes,n_classes),
+#         )
+
+#     def forward (self, x: torch.Tensor)->torch.Tensor:
+#         # print(x.size())
+#         x=self.features(x)
+#         # print(x.size())
+#         x=self.hybrid_classifier(x)
+#         # print(x.size())
+#         return x
 
 
 # model = Model(8,3)
@@ -160,7 +193,7 @@ class Model(nn.Module):
 
 ##################################### HYPERPARAMETERS ##########################################################
 
-LR = 1e-4  #5e-4,
+LR = 1e-4  #5e-4, 1e-4,1e-3, 1e-2, 5e-3(intéressant),   #new: 
 EPOCH = 10
 BATCH_SIZE = 128
 FRACTION = 1          #value between 0-1

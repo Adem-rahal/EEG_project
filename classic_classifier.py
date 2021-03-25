@@ -89,6 +89,37 @@ class Model(nn.Module):
         # print(x.size())
         return x
 
+class Model(nn.Module):     
+    def __init__(self, channels: int=8, n_classes: int=3)->None:
+        super(Model,self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv1d(channels,32,kernel_size=2),nn.ReLU(),nn.BatchNorm1d(32),nn.MaxPool1d(2),
+            nn.Conv1d(32,32,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            nn.Conv1d(32,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),
+            nn.Conv1d(64,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            nn.Conv1d(64,128,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
+            # nn.Conv1d(128,128,kernel_size=1,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            # nn.Conv1d(128,256,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
+            # nn.Conv1d(256,256,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
+            # nn.Conv1d(256,512,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
+            # nn.Conv1d(512,512,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
+            nn.Flatten(),
+            #nn.Conv2d(256,512,kernel_size=3,stride=1,padding=0),nn.BatchNorm2d(512),nn.ReLU(),
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(128,128),nn.ReLU(),nn.Dropout(0.5),
+            nn.Linear(128,32),
+            nn.Linear(32,n_classes),
+        )
+
+    def forward (self, x: torch.Tensor)->torch.Tensor:
+        # print(x.size())
+        x=self.features(x)
+        # print(x.size())
+        x=self.classifier(x)
+        # print(x.size())
+        return x
+
 
 # class Model(nn.Module):
 #     def __init__(self, channels: int=8, n_classes: int=3)->None:
@@ -123,8 +154,8 @@ class Model(nn.Module):
 
 ##################################### HYPERPARAMETERS ##########################################################
 
-LR = 1.25e-5
-EPOCH = 10
+LR = 0.95e-4 #~5e-5                        new# 1e-4(49.80%)nul, 5e-5(pas mal), 7e-5(50.55%), 5e-4,
+EPOCH = 15
 BATCH_SIZE = 128
 FRACTION = 1            #value between 0-1
 NUM_WORKERS = 10
@@ -210,101 +241,101 @@ opt = AdamW(model.parameters(),lr=LR ,weight_decay=DECAY)
 
 ####################################### TRAINING ###################################################################
 
-# train_accuracy=[]
-# test_accuracy=[]
-# train_loss=[]
-# test_loss=[]
+train_accuracy=[]
+test_accuracy=[]
+train_loss=[]
+test_loss=[]
 
-# for epoch in tqdm(range(EPOCH),desc="Epoch"):
-#     model.train()
-#     with tqdm(trainloader, desc="Train") as pbar:
-#         total_loss = 0
-#         acc = 0
-#         for input,label in pbar:
-#             input,label = input.cuda(), label.cuda()
-#             opt.zero_grad()
-#             output = model(input)
-#             loss = criterion(output,label)
-#             loss.backward()
-#             opt.step()
-#             acc += (torch.argmax(output, dim = 1) == label).sum()/len(train_dataset)
-#             total_loss += loss.item()/len(trainloader)
-#             pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
+for epoch in tqdm(range(EPOCH),desc="Epoch"):
+    model.train()
+    with tqdm(trainloader, desc="Train") as pbar:
+        total_loss = 0
+        acc = 0
+        for input,label in pbar:
+            input,label = input.cuda(), label.cuda()
+            opt.zero_grad()
+            output = model(input)
+            loss = criterion(output,label)
+            loss.backward()
+            opt.step()
+            acc += (torch.argmax(output, dim = 1) == label).sum()/len(train_dataset)
+            total_loss += loss.item()/len(trainloader)
+            pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
 
-#     train_accuracy.append(torch.Tensor.cpu(acc))
-#     train_loss.append(total_loss)
-#     model.eval()
-#     with tqdm(testloader,desc="Valid") as pbar:
-#         with torch.no_grad():
-#             total_loss = 0
-#             acc= 0
+    train_accuracy.append(torch.Tensor.cpu(acc))
+    train_loss.append(total_loss)
+    model.eval()
+    with tqdm(testloader,desc="Valid") as pbar:
+        with torch.no_grad():
+            total_loss = 0
+            acc= 0
 
-#             for input,label in pbar:
-#                 input,label = input.cuda() ,label.cuda()
-#                 opt.zero_grad()
-#                 output = model(input)
-#                 loss = criterion(output,label)
-#                 acc += (torch.argmax(output, dim = 1) == label).sum()/len(test_dataset)
-#                 total_loss += loss.item()/len(testloader)            
-#                 pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
-#     test_accuracy.append(torch.Tensor.cpu(acc))
-#     test_loss.append(total_loss)
-#     torch.save(model.state_dict(), f"model/E_{epoch:02d}-A_{acc*100:.2f}%-L_{total_loss:.3f}.pth")
+            for input,label in pbar:
+                input,label = input.cuda() ,label.cuda()
+                opt.zero_grad()
+                output = model(input)
+                loss = criterion(output,label)
+                acc += (torch.argmax(output, dim = 1) == label).sum()/len(test_dataset)
+                total_loss += loss.item()/len(testloader)            
+                pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
+    test_accuracy.append(torch.Tensor.cpu(acc))
+    test_loss.append(total_loss)
+    torch.save(model.state_dict(), f"model/E_{epoch:02d}-A_{acc*100:.2f}%-LR_{LR}.pth")
 
 
-# fig, (ax1, ax2) = plt.subplots(1, 2)
-# ax1.plot([k for k in range(EPOCH)], train_accuracy, color='blue', label="Train")
-# ax1.plot([k for k in range(EPOCH)], test_accuracy, color='red', label="Test")
-# ax2.plot([k for k in range(EPOCH)], train_loss, color='blue', label="Train")
-# ax2.plot([k for k in range(EPOCH)], test_loss, color='red', label="Test")
-# ax1.legend(facecolor='white')
-# ax2.legend(facecolor='white')
-# ax1.set(xlabel="nombre Epoch", ylabel="Accuracy")
-# ax2.set(xlabel="nombre Epoch", ylabel="Loss")
-# fig.canvas.draw()
-# plt.show()
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.plot([k for k in range(EPOCH)], train_accuracy, color='blue', label="Train")
+ax1.plot([k for k in range(EPOCH)], test_accuracy, color='red', label="Test")
+ax2.plot([k for k in range(EPOCH)], train_loss, color='blue', label="Train")
+ax2.plot([k for k in range(EPOCH)], test_loss, color='red', label="Test")
+ax1.legend(facecolor='white')
+ax2.legend(facecolor='white')
+ax1.set(xlabel="nombre Epoch", ylabel="Accuracy")
+ax2.set(xlabel="nombre Epoch", ylabel="Loss")
+fig.canvas.draw()
+plt.show()
 
 
 ############################# TESTING THE MODEL #############################################
 
 
-model = Model().cuda()
-model.load_state_dict(torch.load("best_model/classical/E_00-A_47.82%-L_1.112.pth"))
-model.eval()
+# model = Model().cuda()
+# model.load_state_dict(torch.load("best_model/classical/E_02-A_50.03%-LR_7e-05.pth"))
+# model.eval()
 
-preds=[]
-labels=[]
+# preds=[]
+# labels=[]
 
-with torch.no_grad():
-            for input,label in testloader:
-                input,label = input.cuda() ,label.cuda()
-                opt.zero_grad()
-                output = model(input)
-                pred=torch.zeros((len(output)))
+# with torch.no_grad():
+#             for input,label in testloader:
+#                 input,label = input.cuda() ,label.cuda()
+#                 opt.zero_grad()
+#                 output = model(input)
+#                 pred=torch.zeros((len(output)))
 
-                for k in range(len(output)):
-                    pred[k]=torch.argmax(output[k])
-                if preds==[]:
-                    preds=pred
-                    labels=label
-                else:
-                    preds= torch.cat((preds,pred),0)
-                    labels= torch.cat((labels,label),0)
+#                 for k in range(len(output)):
+#                     pred[k]=torch.argmax(output[k])
+#                 if preds==[]:
+#                     preds=pred
+#                     labels=label
+#                 else:
+#                     preds= torch.cat((preds,pred),0)
+#                     labels= torch.cat((labels,label),0)
 
 
-conf = confusion_matrix(labels.cpu().data.numpy(), preds.cpu().data.numpy())
-conf =conf.astype('float')
-for i in range(len(conf)):
-    ligne=0
-    for j in range(len(conf[i])):
-        ligne+=conf[i][j]
+# conf = confusion_matrix(labels.cpu().data.numpy(), preds.cpu().data.numpy())
+# conf =conf.astype('float')
+# for i in range(len(conf)):
+#     ligne=0
+#     for j in range(len(conf[i])):
+#         ligne+=conf[i][j]
     
-    conf[i]=[conf[i][k]/ligne for k in range(len(conf[i]))]
+#     conf[i]=[conf[i][k]/ligne for k in range(len(conf[i]))]
 
-categorie=["left","none","right"]
+# categorie=["left","none","right"]
 
-sn.heatmap(conf,annot=True,xticklabels=categorie,yticklabels=categorie,cmap="Blues",fmt=".2%")
-plt.title("Model 49.51% Accuracy")   #BEST :47.82, 
-plt.xlabel("Action Thought")
-plt.ylabel("Predicted Action")
-plt.show()
+# sn.heatmap(conf,annot=True,xticklabels=categorie,yticklabels=categorie,cmap="Blues",fmt=".2%")
+# plt.title("Model 49.33% Accuracy")   #BEST :47.82, 
+# plt.xlabel("Action Thought")
+# plt.ylabel("Predicted Action")
+# plt.show()

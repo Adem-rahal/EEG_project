@@ -21,18 +21,18 @@ import torch.optim as optim
 
 
 
-class Model(nn.Module):     #BEST : 49,34% LR=10e-5
+class Model(nn.Module):     
     def __init__(self, channels: int=8, n_classes: int=3)->None:
         super(Model,self).__init__()
         self.features = nn.Sequential(
-            nn.BatchNorm1d(channels),nn.Conv1d(channels,64,kernel_size=3,stride=1),nn.ReLU(),nn.BatchNorm1d(64),nn.Dropout(0.4),
-            nn.Conv1d(64,128,kernel_size=2,stride=2),nn.ReLU(),nn.BatchNorm1d(128),nn.MaxPool1d(2),
+            nn.Conv1d(channels,64,kernel_size=3,stride=1),nn.ReLU(),nn.Dropout(0.4),
+            nn.Conv1d(64,128,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),
             nn.Conv1d(128,256,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.4),
             nn.Flatten(),
             #nn.Conv2d(256,512,kernel_size=3,stride=1,padding=0),nn.BatchNorm2d(512),nn.ReLU(),
         )
         self.classifier = nn.Sequential(
-            nn.BatchNorm1d(768),nn.Linear(768,512),nn.ReLU(),nn.Dropout(0.4),
+            nn.Linear(768,512),nn.ReLU(),nn.Dropout(0.4),
             nn.Linear(512,n_classes),
         )
 
@@ -47,7 +47,7 @@ class Model(nn.Module):     #BEST : 49,34% LR=10e-5
 # reshape = (-1, 8, 60)
 
 model = Model()
-model.load_state_dict(torch.load("best_model/classical/E_02-A_49.34%-L_1.023.pth"))
+model.load_state_dict(torch.load("best_model/classical/E_01-A_48.20%-L_1.115.pth"))
 model.eval()
 
 test = torch.rand((32,8,60))
@@ -66,7 +66,7 @@ ACTION = 'left' # THIS IS THE ACTION YOU'RE THINKING
 
 FFT_MAX_HZ = 60
 
-HM_SECONDS = 10  # this is approximate. Not 100%. do not depend on this.
+HM_SECONDS = 15  # this is approximate. Not 100%. do not depend on this.
 TOTAL_ITERS = HM_SECONDS*25  # ~25 iters/sec
 BOX_MOVE = "model"  # random or model
 
@@ -164,7 +164,7 @@ for i in range(TOTAL_ITERS):  # how many iterations. Eventually this would be a 
 
 
     
-exit()
+
 #plt.plot(channel_datas[0][0])
 #plt.show()
 
@@ -179,11 +179,11 @@ if not os.path.exists(actiondir):
 print(len(channel_datas))
 
 print(f"saving {ACTION} data...")
-np.save(os.path.join(actiondir, f"{int(time.time())}.npy"), np.array(channel_datas))
+#np.save(os.path.join(actiondir, f"{int(time.time())}.npy"), np.array(channel_datas))
 print("done.")
 
 for action in ['left', 'right', 'none']:
-    #print(f"{action}:{len(os.listdir(f'data/{action}'))}")
+    print(f"{action}:{len(os.listdir(f'data/{action}'))}")
     print(action, sum(os.path.getsize(f'data/{action}/{f}') for f in os.listdir(f'data/{action}'))/1_000_000, "MB")
 
 print(ACTION, correct/total)
