@@ -20,17 +20,6 @@ import matplotlib.pyplot as plt
 cuda = torch.device('cuda:1')
 ###################### DATASET & MODEL INITIALIZATION ##################################
 
-# class EEGData(Dataset) :
-#     def __init__(self,dir: str="Training", lenght: int=0, transform=None) -> None:
-#         self.dir = dir
-#         self.lenght = lenght
-
-#     def __len__(self) -> int:
-#         return self.lenght
-
-#     def __getitem__(self, idx) -> Tuple[torch.Tensor,int]:
-#         return pick_data(self.dir,idx)
-
 class EEGData(Dataset) :
     def __init__(self, x, y, transform=None) -> None:
         self.x = x
@@ -41,30 +30,6 @@ class EEGData(Dataset) :
 
     def __getitem__(self, idx) -> Tuple[torch.Tensor,int]:
         return (torch.from_numpy(self.x[idx]).float(),int(self.y[idx]))
-
-# class Model(nn.Module):     #BEST : 49,34% LR=10e-5
-#     def __init__(self, channels: int=8, n_classes: int=3)->None:
-#         super(Model,self).__init__()
-#         self.features = nn.Sequential(
-#             nn.BatchNorm1d(channels),nn.Conv1d(channels,64,kernel_size=3,stride=1),nn.ReLU(),nn.BatchNorm1d(64),nn.Dropout(0.4),
-#             nn.Conv1d(64,128,kernel_size=2,stride=2),nn.ReLU(),nn.BatchNorm1d(128),nn.MaxPool1d(2),
-#             nn.Conv1d(128,256,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.4),
-#             nn.Flatten(),
-#             #nn.Conv2d(256,512,kernel_size=3,stride=1,padding=0),nn.BatchNorm2d(512),nn.ReLU(),
-#         )
-#         self.classifier = nn.Sequential(
-#             nn.BatchNorm1d(768),nn.Linear(768,512),nn.ReLU(),nn.Dropout(0.4),
-#             nn.Linear(512,n_classes),
-#         )
-
-#     def forward (self, x: torch.Tensor)->torch.Tensor:
-#         # print(x.size())
-#         x=self.features(x)
-#         # print(x.size())
-#         x=self.classifier(x)
-#         # print(x.size())
-#         return x
-
 
 class Model(nn.Module):     
     def __init__(self, channels: int=8, n_classes: int=3)->None:
@@ -89,63 +54,32 @@ class Model(nn.Module):
         # print(x.size())
         return x
 
-class Model(nn.Module):     
-    def __init__(self, channels: int=8, n_classes: int=3)->None:
-        super(Model,self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv1d(channels,32,kernel_size=2),nn.ReLU(),nn.BatchNorm1d(32),nn.MaxPool1d(2),
-            nn.Conv1d(32,32,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
-            nn.Conv1d(32,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),
-            nn.Conv1d(64,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
-            nn.Conv1d(64,128,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
-            # nn.Conv1d(128,128,kernel_size=1,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
-            # nn.Conv1d(128,256,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
-            # nn.Conv1d(256,256,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.5),
-            # nn.Conv1d(256,512,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
-            # nn.Conv1d(512,512,kernel_size=1),nn.ReLU(),nn.MaxPool1d(2),
-            nn.Flatten(),
-            #nn.Conv2d(256,512,kernel_size=3,stride=1,padding=0),nn.BatchNorm2d(512),nn.ReLU(),
-        )
-        self.classifier = nn.Sequential(
-            nn.Linear(128,128),nn.ReLU(),nn.Dropout(0.5),
-            nn.Linear(128,32),
-            nn.Linear(32,n_classes),
-        )
-
-    def forward (self, x: torch.Tensor)->torch.Tensor:
-        # print(x.size())
-        x=self.features(x)
-        # print(x.size())
-        x=self.classifier(x)
-        # print(x.size())
-        return x
-
-
-# class Model(nn.Module):
+# class Model(nn.Module):     
 #     def __init__(self, channels: int=8, n_classes: int=3)->None:
 #         super(Model,self).__init__()
 #         self.features = nn.Sequential(
-#             nn.Conv1d(channels,64,kernel_size=3),nn.ReLU(),nn.Dropout(0.4),
-#             nn.Conv1d(64,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),
-#             nn.Conv1d(64,64,kernel_size=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.4),
+#             nn.Conv1d(channels,32,kernel_size=2),nn.ReLU(),nn.BatchNorm1d(32),nn.MaxPool1d(2),
+#             nn.Conv1d(32,32,kernel_size=2),nn.ReLU(),nn.BatchNorm1d(32),nn.MaxPool1d(2),nn.Dropout(0.5),
+#             nn.Conv1d(32,64,kernel_size=2),nn.ReLU(),nn.BatchNorm1d(64),nn.MaxPool1d(2),
+#             nn.Conv1d(64,64,kernel_size=2),nn.ReLU(),nn.BatchNorm1d(64),nn.MaxPool1d(2),nn.Dropout(0.5),
+#             nn.Conv1d(64,128,kernel_size=1),nn.ReLU(),nn.BatchNorm1d(128),nn.MaxPool1d(2),
 #             nn.Flatten(),
-#             #nn.Conv2d(256,512,kernel_size=3,stride=1,padding=0),nn.BatchNorm2d(512),nn.ReLU(),
 #         )
 #         self.classifier = nn.Sequential(
-#             nn.Linear(832,512),nn.ReLU(),nn.Dropout(0.4),
-#             nn.Linear(512,n_classes),
+#             nn.Linear(128,128),nn.ReLU(),nn.BatchNorm1d(128),nn.Dropout(0.5),
+#             nn.Linear(128,32),nn.BatchNorm1d(32),
+#             nn.Linear(32,n_classes),
 #         )
 
 #     def forward (self, x: torch.Tensor)->torch.Tensor:
 #         # print(x.size())
 #         x=self.features(x)
 #         # print(x.size())
-#         # # x=x.view(x.size(0),-1)
-#         # print(x.size())
 #         x=self.classifier(x)
 #         # print(x.size())
 #         return x
 
+'''Uncomment these lignes to test your model '''
 
 # model = Model(8,3)
 # init_weights = torch.rand([2, 8,60])
@@ -163,13 +97,12 @@ DECAY = 1e-4
 
 ##################################### DATA-EMBEDDING ##########################################################
 
-def create_data(starting_dir: str="data") -> int :
+def create_data(starting_dir="data") -> int :
     ACTIONS = ["left", "right", "none"]
     training_data = {}
     for action in ACTIONS:
         if action not in training_data:
             training_data[action] = []
-
         data_dir = os.path.join(starting_dir,action)
         for item in os.listdir(data_dir):
             data = np.load(os.path.join(data_dir, item))
@@ -177,10 +110,12 @@ def create_data(starting_dir: str="data") -> int :
                 training_data[action].append(item)
 
     lengths = [len(training_data[action]) for action in ACTIONS]
+    print(lengths)
     for action in ACTIONS:
         np.random.shuffle(training_data[action])  # note that regular shuffle is GOOF af
         training_data[action] = training_data[action][:min(lengths)]
-        training_data[action] = np.array(training_data[action])[:,0:8]  #Adapt The Data to our numbers of electrodes on the EEG
+        training_data[action] = np.array(training_data[action])[:,0:8]  #Adapt The Data to your numbers of electrodes on the EEG
+                                                                        #    it's 8 in our case
 
     # creating X, y 
     combined_data = []
@@ -200,38 +135,18 @@ def create_data(starting_dir: str="data") -> int :
         X.append(a)
         y.append(b)
 
-    X , y = np.array(X), np.array(y)
-    if starting_dir == "data":
-        np.save("TrainingX",X[:int(len(X)*FRACTION)])
-        np.save("Trainingy",y[:int(len(X)*FRACTION)])
-    else : 
-        np.save("TestingX",X[:int(len(X)*FRACTION)])
-        np.save("Testingy",y[:int(len(X)*FRACTION)])
-
-    # print(" Data created succesfully ")
-    return int(len(X)*FRACTION)
-
-# def pick_data(dir: str="Training",idx: int=0) -> Tuple[torch.Tensor,int]:
-#     X , y = np.load(str(dir)+"X.npy",mmap_mode="r")[idx],np.load(str(dir)+"y.npy",mmap_mode="r")[idx]    #Creating TrainingX.npy and Trainingy.npy (or Testing) files
-#     return (torch.from_numpy(np.array(X)).float(),int(y))                                                #    for picking random arrays from them
+    return X[:int(len(X)*FRACTION)], y[:int(len(X)*FRACTION)]    #To not load the full dataset when trying quick changes
 
 ##################################### MODEL SETUP ##########################################################
 
-lenght_train = create_data("data")
-lenght_test = create_data("validation_data")
-
-X_TRAIN, Y_TRAIN = np.load("TrainingX.npy",mmap_mode="r"),np.load("Trainingy.npy",mmap_mode="r")
-X_TEST, Y_TEST = np.load("TestingX.npy",mmap_mode="r"),np.load("Testingy.npy",mmap_mode="r")
+X_TRAIN, Y_TRAIN = create_data("data")                               
+X_TEST, Y_TEST = create_data("validation_data")
 
 train_dataset = EEGData(np.array(X_TRAIN),np.array(Y_TRAIN))
 test_dataset = EEGData(np.array(X_TEST),np.array(Y_TEST))
+
 trainloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle = True, num_workers=NUM_WORKERS,pin_memory=True,drop_last=True)
 testloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle = False, num_workers=NUM_WORKERS,pin_memory=True ,drop_last=True)
-
-# train_dataset = EEGData("Training",lenght_train)
-# test_dataset = EEGData("Testing",lenght_test)
-# trainloader = DataLoader(train_dataset, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS,pin_memory = True)
-# testloader = DataLoader(test_dataset, batch_size = BATCH_SIZE, shuffle = False, num_workers = NUM_WORKERS,pin_memory = True )
 
 model = Model().cuda()
 
@@ -314,25 +229,25 @@ plt.show()
 #                 pred=torch.zeros((len(output)))
 
 #                 for k in range(len(output)):
-#                     pred[k]=torch.argmax(output[k])
-#                 if preds==[]:
-#                     preds=pred
-#                     labels=label
+#                     pred[k] = torch.argmax(output[k])
+#                 if preds == []:
+#                     preds = pred
+#                     labels = label
 #                 else:
-#                     preds= torch.cat((preds,pred),0)
-#                     labels= torch.cat((labels,label),0)
+#                     preds = torch.cat((preds,pred),0)
+#                     labels = torch.cat((labels,label),0)
 
 
 # conf = confusion_matrix(labels.cpu().data.numpy(), preds.cpu().data.numpy())
-# conf =conf.astype('float')
+# conf = conf.astype('float')
 # for i in range(len(conf)):
-#     ligne=0
+#     ligne = 0
 #     for j in range(len(conf[i])):
-#         ligne+=conf[i][j]
+#         ligne += conf[i][j]
     
-#     conf[i]=[conf[i][k]/ligne for k in range(len(conf[i]))]
+#     conf[i] = [conf[i][k]/ligne for k in range(len(conf[i]))]
 
-# categorie=["left","none","right"]
+# categorie = ["left","none","right"]
 
 # sn.heatmap(conf,annot=True,xticklabels=categorie,yticklabels=categorie,cmap="Blues",fmt=".2%")
 # plt.title("Model 49.33% Accuracy")   #BEST :47.82, 

@@ -30,26 +30,9 @@ EMBEDDING_LAYERS = 3
 ################################ DEVICE CHOICE ###########################################
 
 dev = qml.device("default.qubit", wires = NUM_WIRES)  #Check performance of other simulators
-# dev = qml.device("qulacs.simulator", wires = NUM_WIRES ,gpu=False)
-# dev = qml.device('qiskit.ibmq', wires = 8, backend = 'ibmq_16_melbourne',ibmqx_token="11538e0e65772d4f8392fbf99c901c8493296017ca1e8386edeb1577f25f8bd921179de59b9cc7f3a8dafed826c693e81e8cd8a26bcdb67503529eb5f38daee2")
-
 cuda = torch.device('cuda')
 
 ################################ DATASET INITIALIZATION ##################################
-
-'''Use the first EEGDataset class when working with a large dataset, also make sure to un comment the pick_data() function 
-       under the create_data function and the necessary train/test loaders, which will be reminded. '''
-
-# class EEGData(Dataset) :                                                        
-#     def __init__(self,dir="Training",lenght=0, transform=None) -> None:
-#         self.dir = dir
-#         self.lenght = lenght
-
-#     def __len__(self) -> int:
-#         return self.lenght
-
-#     def __getitem__(self, idx) -> Tuple[torch.Tensor,int]:
-#         return pick_data(self.dir,idx)
 
 class EEGData(Dataset) :
     def __init__(self, x, y, transform=None) -> None:
@@ -62,7 +45,6 @@ class EEGData(Dataset) :
     def __getitem__(self, idx) -> Tuple[torch.Tensor,int]:
         return (torch.from_numpy(self.x[idx]),int(self.y[idx]))
 
-
 ################################ QUANTUM MODEL ##################################
 
 def normalize(x):
@@ -70,16 +52,16 @@ def normalize(x):
         x=10
     return x*(2*np.pi/10)
 
-
 def emmbedding_layer(x,indice):
     for i in range(NUM_WIRES):
             X = normalize(x[i,indice])
             qml.RY(X,wires=i)   
+
     # qml.CNOT(wires=[1, 0])
     # qml.CNOT(wires=[0, 1])
     # qml.CNOT(wires=[2, 3])
     # qml.CNOT(wires=[3, 2])
-    # qml.CNOT(wires=[4, 6])    #Interference headset simulation
+    # qml.CNOT(wires=[4, 6])    #Interference headset simulation (too expensive in terms of time in our case)
     # qml.CNOT(wires=[6, 4])
     # qml.CNOT(wires=[6, 7])
     # qml.CNOT(wires=[7, 6])
@@ -99,35 +81,15 @@ def circuit(inputs,weights):
 init_weights = Variable(torch.from_numpy(strong_ent_layers_uniform(n_layers=EMBEDDING_LAYERS, n_wires=NUM_WIRES)).cuda(),requires_grad=True)   
 weights_shape= { "weights": [EMBEDDING_LAYERS, NUM_WIRES, 3] }
 
-
-# @qml.qnode(dev, interface="torch", diff_method="adjoint")
-# def circuit(inputs,weights):
-#     x = inputs
-#     for indice in range(NUM_LAYERS):
-#         emmbedding_layer(x,indice)
-#         # StronglyEntanglingLayers(init_weights[indice], wires=[k for k in range(NUM_WIRES)])
-#         BasicEntanglerLayers(init_weights[indice], wires=[k for k in range(NUM_WIRES)])
-#     return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2)) 
-
-# init_weights = torch.zeros([NUM_LAYERS, EMBEDDING_LAYERS, NUM_WIRES],device=cuda)              
-# for k in range(NUM_LAYERS):      
-#     init_weights[k] = torch.from_numpy(basic_entangler_layers_uniform(n_layers=EMBEDDING_LAYERS, n_wires=NUM_WIRES))   
-
-# init_weights = Variable(init_weights, requires_grad=True)
-# weights_shape = { "weights": [NUM_LAYERS, EMBEDDING_LAYERS, NUM_WIRES] } 
-
 ''' Lignes to comment for benchmarking simulators speeds '''
         
 qlayer = qml.qnn.TorchLayer(circuit, weights_shape)
 model = nn.Sequential(qlayer).cuda()
 
-
 ################################ BENCHMARKING  ####################################
-
 
 '''To Test how the differents simulators works with your model uncomment this section and comment the 2 lignes above and the Qnode decorator above the circuit 
    method. You will have to install the necessary pennylane plugins yourself according to what device you want to try'''
-
 
 # test = torch.rand([10, 8, NUM_LAYERS],device=cuda)
 # # weights_shape = { "weights": [NUM_LAYERS, EMBEDDING_LAYERS, NUM_WIRES, 3] }
@@ -169,8 +131,8 @@ model = nn.Sequential(qlayer).cuda()
 
 LR = 1e-3
 EPOCH = 2
-BATCH_SIZE = 4
-FRACTION = 0.005              #value between 0-1
+BATCH_SIZE = 8
+FRACTION = 1             #value between 0-1
 NUM_WORKERS = 10
 DECAY = 1e-4
 
@@ -184,7 +146,6 @@ def create_data(starting_dir="data") -> int :
             training_data[action] = []
         data_dir = os.path.join(starting_dir,action)
         for item in os.listdir(data_dir):
-            #print(action, item)
             data = np.load(os.path.join(data_dir, item))
             for item in data:
                 training_data[action].append(item)
@@ -194,7 +155,8 @@ def create_data(starting_dir="data") -> int :
     for action in ACTIONS:
         np.random.shuffle(training_data[action])  # note that regular shuffle is GOOF af
         training_data[action] = training_data[action][:min(lengths)]
-        training_data[action] = np.array(training_data[action])[:,0:NUM_WIRES]  #Adapt The Data to our numbers of electrodes on the EEG
+        training_data[action] = np.array(training_data[action])[:,0:8]  #Adapt The Data to your numbers of electrodes on the EEG
+                                                                        #    it's 8 in our case
 
     # creating X, y 
     combined_data = []
@@ -203,7 +165,6 @@ def create_data(starting_dir="data") -> int :
             if action == "left":
                 combined_data.append([data, 0])
             elif action == "right":
-                #np.append(combined_data, np.array([data, [1, 0]]))
                 combined_data.append([data, 2])
             elif action == "none":
                 combined_data.append([data, 1])
@@ -215,44 +176,25 @@ def create_data(starting_dir="data") -> int :
         X.append(a)
         y.append(b)
 
-    X , y = np.array(X), np.array(y)
-    if starting_dir == "data":
-        np.save("TrainingX",X[:int(len(X)*FRACTION)])
-        np.save("Trainingy",y[:int(len(X)*FRACTION)])
-    else : 
-        np.save("TestingX",X[:int(len(X)*FRACTION*3)])
-        np.save("Testingy",y[:int(len(X)*FRACTION*3)])
+    return X[:int(len(X)*FRACTION)], y[:int(len(X)*FRACTION)]    #To not load the full dataset when trying quick changes
 
-    print(" Data created succesfully ")
-    return int(len(X)*FRACTION)
-
-
-# def pick_data(dir="Training",idx=0) -> Tuple[torch.Tensor,int]:
-#     X , y = np.load(str(dir)+"X.npy",mmap_mode="r")[idx],np.load(str(dir)+"y.npy",mmap_mode="r")[idx]
-#     return (torch.from_numpy(np.array(X)),int(y))
 
 
 ##################################### MODEL INITIALISATION ##########################################################
 
+X_TRAIN, Y_TRAIN = create_data("data")                               
+X_TEST, Y_TEST = create_data("validation_data")
 
-lenght_train = create_data("data")
-lenght_test = create_data("validation_data")
-
-# train_dataset = EEGData("Training",lenght_train)                        #Section tu Un-comment when working with a big dataset  
-# test_dataset = EEGData("Testing",lenght_test)
-# trainloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle = True, num_workers=NUM_WORKERS,pin_memory=True,drop_last=True)
-# testloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle = False, num_workers=NUM_WORKERS,pin_memory=True ,drop_last=True)
-
-X_TRAIN, Y_TRAIN = np.load("TrainingX.npy",mmap_mode="r"),np.load("Trainingy.npy",mmap_mode="r")
-X_TEST, Y_TEST = np.load("TestingX.npy",mmap_mode="r"),np.load("Testingy.npy",mmap_mode="r")
-
-train_dataset = EEGData(np.array(X_TRAIN),np.array(Y_TRAIN))             #Section tu Un-comment when working with a small dataset  
+train_dataset = EEGData(np.array(X_TRAIN),np.array(Y_TRAIN))           
 test_dataset = EEGData(np.array(X_TEST),np.array(Y_TEST))
+
 trainloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle = True, num_workers=NUM_WORKERS,pin_memory=True,drop_last=True)
 testloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle = False, num_workers=NUM_WORKERS,pin_memory=True ,drop_last=True)
 
 criterion = nn.CrossEntropyLoss().cuda()
 opt = AdamW([init_weights],lr=LR ,weight_decay=DECAY)
+
+############################################## TRAINING ###########################################################
 
 train_accuracy=[]
 test_accuracy=[]
@@ -306,3 +248,45 @@ ax1.set(xlabel="nombre Epoch", ylabel="Accuracy")
 ax2.set(xlabel="nombre Epoch", ylabel="Loss")
 fig.canvas.draw()
 plt.show()
+
+############################# TESTING THE MODEL #############################################
+
+# model = Model().cuda()
+# model.load_state_dict(torch.load("best_model/quantum/Q_E_00-A_37.00%-L_1.101.pth"))
+# model.eval()
+
+# preds=[]
+# labels=[]
+
+# with torch.no_grad():
+#             for input,label in testloader:
+#                 input,label = input.cuda() ,label.cuda()
+#                 opt.zero_grad()
+#                 output = model(input)
+#                 pred=torch.zeros((len(output)))
+
+#                 for k in range(len(output)):
+#                     pred[k]=torch.argmax(output[k])
+#                 if preds==[]:
+#                     preds=pred
+#                     labels=label
+#                 else:
+#                     preds= torch.cat((preds,pred),0)
+#                     labels= torch.cat((labels,label),0)
+
+# conf = confusion_matrix(labels.cpu().data.numpy(), preds.cpu().data.numpy())
+# conf =conf.astype('float')
+# for i in range(len(conf)):
+#     ligne=0
+#     for j in range(len(conf[i])):
+#         ligne+=conf[i][j]
+    
+#     conf[i]=[conf[i][k]/ligne for k in range(len(conf[i]))]
+
+# categorie=["left","none","right"]
+
+# sn.heatmap(conf,annot=True,xticklabels=categorie,yticklabels=categorie,cmap="Blues",fmt=".2%")
+# plt.title("Quantum Model xx% Accuracy")   
+# plt.xlabel("Action Thought")
+# plt.ylabel("Predicted Action")
+# plt.show()
