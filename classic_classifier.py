@@ -17,7 +17,7 @@ import os
 import matplotlib.pyplot as plt
 
 
-cuda = torch.device('cuda:1')
+cuda = torch.device('cuda:0')
 ###################### DATASET & MODEL INITIALIZATION ##################################
 
 class EEGData(Dataset) :
@@ -35,7 +35,7 @@ class Model(nn.Module):
     def __init__(self, channels: int=8, n_classes: int=3)->None:
         super(Model,self).__init__()
         self.features = nn.Sequential(
-            nn.Conv1d(channels,64,kernel_size=3,stride=1),nn.ReLU(),nn.Dropout(0.4),
+            nn.Conv1d(channels,64,kernel_size=3,stride=1),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.4),
             nn.Conv1d(64,128,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),
             nn.Conv1d(128,256,kernel_size=2,stride=2),nn.ReLU(),nn.MaxPool1d(2),nn.Dropout(0.4),
             nn.Flatten(),

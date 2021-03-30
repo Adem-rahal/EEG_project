@@ -53,7 +53,7 @@ def emmbedding_layer(x):
 
 
 @qml.qnode(dev, interface="torch",diff_method='adjoint')
-def circuit(inputs,weights) -> list(float):
+def circuit(inputs,weights):
     for k in range(0,15,3):
         qml.templates.AngleEmbedding(inputs[k:k+3],wires = range(NUM_WIRES))
     StronglyEntanglingLayers(init_weights, wires = [k for k in range(NUM_WIRES)])
@@ -141,10 +141,10 @@ class Model(nn.Module):
 
 ##################################### HYPERPARAMETERS ##########################################################
 
-LR = 7.5e-3  
-EPOCH = 6
+LR = 7.5e-5  #7.5e-3, 
+EPOCH = 11
 BATCH_SIZE = 128
-FRACTION = 0.5          #value between 0-1
+FRACTION = 1          #value between 0-1
 NUM_WORKERS = 8
 DECAY = 1e-4
 
@@ -208,98 +208,98 @@ opt = AdamW([init_weights],lr=LR ,weight_decay=DECAY)
 
 ####################################### TRAINING ###################################################################
 
-train_accuracy=[]
-test_accuracy=[]
-train_loss=[]
-test_loss=[]
+# train_accuracy=[]
+# test_accuracy=[]
+# train_loss=[]
+# test_loss=[]
 
-for epoch in tqdm(range(EPOCH),desc="Epoch"):
-    model.train()
-    with tqdm(trainloader, desc="Train") as pbar:
-        total_loss = 0
-        acc = 0
-        for input,label in pbar:
-            input,label = input.cuda(), label.cuda()
-            opt.zero_grad()
-            output = model(input)
-            loss = criterion(output,label)
-            loss.backward()
-            opt.step()
-            acc += (torch.argmax(output, dim = 1) == label).sum()/len(train_dataset)
-            total_loss += loss.item()/len(trainloader)
-            pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
+# for epoch in tqdm(range(EPOCH),desc="Epoch"):
+#     model.train()
+#     with tqdm(trainloader, desc="Train") as pbar:
+#         total_loss = 0
+#         acc = 0
+#         for input,label in pbar:
+#             input,label = input.cuda(), label.cuda()
+#             opt.zero_grad()
+#             output = model(input)
+#             loss = criterion(output,label)
+#             loss.backward()
+#             opt.step()
+#             acc += (torch.argmax(output, dim = 1) == label).sum()/len(train_dataset)
+#             total_loss += loss.item()/len(trainloader)
+#             pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
 
-    train_accuracy.append(torch.Tensor.cpu(acc))
-    train_loss.append(total_loss)
-    model.eval()
-    with tqdm(testloader,desc="Valid") as pbar:
-        with torch.no_grad():
-            total_loss = 0
-            acc= 0
+#     train_accuracy.append(torch.Tensor.cpu(acc))
+#     train_loss.append(total_loss)
+#     model.eval()
+#     with tqdm(testloader,desc="Valid") as pbar:
+#         with torch.no_grad():
+#             total_loss = 0
+#             acc= 0
 
-            for input,label in pbar:
-                input,label = input.cuda() ,label.cuda()
-                opt.zero_grad()
-                output = model(input)
-                loss = criterion(output,label)
-                acc += (torch.argmax(output, dim = 1) == label).sum()/len(test_dataset)
-                total_loss += loss.item()/len(testloader)            
-                pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
-    test_accuracy.append(torch.Tensor.cpu(acc))
-    test_loss.append(total_loss)
-    torch.save(model.state_dict(), f"model/H_E_{epoch:02d}-A_{acc*100:.2f}%-L_{total_loss:.3f}.pth") #Saving the model at each step
-
-
-fig, (ax1, ax2) = plt.subplots(1, 2)
-ax1.plot([k for k in range(EPOCH)], train_accuracy, color='blue', label="Train")
-ax1.plot([k for k in range(EPOCH)], test_accuracy, color='red', label="Test")
-ax2.plot([k for k in range(EPOCH)], train_loss, color='blue', label="Train")
-ax2.plot([k for k in range(EPOCH)], test_loss, color='red', label="Test")
-ax1.legend(facecolor='white')
-ax2.legend(facecolor='white')
-ax1.set(xlabel="Epoch", ylabel="Accuracy")
-ax2.set(xlabel="Epoch", ylabel="Loss")
-fig.canvas.draw()
-plt.show()
-
-############################# TESTING THE MODEL #############################################
-
-# model = Model().cuda()
-# model.load_state_dict(torch.load("best_model/hybrid/H_E_00-A_37.00%-L_1.101.pth"))
-# model.eval()
-
-# preds = []
-# labels = []
-
-# with torch.no_grad():
-#             for input,label in testloader:
+#             for input,label in pbar:
 #                 input,label = input.cuda() ,label.cuda()
 #                 opt.zero_grad()
 #                 output = model(input)
-#                 pred=torch.zeros((len(output)))
+#                 loss = criterion(output,label)
+#                 acc += (torch.argmax(output, dim = 1) == label).sum()/len(test_dataset)
+#                 total_loss += loss.item()/len(testloader)            
+#                 pbar.set_postfix(loss = total_loss,acc = f"{acc*100:.2f}%")
+#     test_accuracy.append(torch.Tensor.cpu(acc))
+#     test_loss.append(total_loss)
+#     torch.save(model.state_dict(), f"model/H_E_{epoch:02d}-A_{acc*100:.2f}%-L_{total_loss:.3f}.pth") #Saving the model at each step
 
-#                 for k in range(len(output)):
-#                     pred[k] = torch.argmax(output[k])
-#                 if preds == []:
-#                     preds = pred
-#                     labels = label
-#                 else:
-#                     preds = torch.cat((preds,pred),0)
-#                     labels = torch.cat((labels,label),0)
 
-# conf = confusion_matrix(labels.cpu().data.numpy(), preds.cpu().data.numpy())
-# conf = conf.astype('float')
-# for i in range(len(conf)):
-#     ligne = 0
-#     for j in range(len(conf[i])):
-#         ligne += conf[i][j]
-    
-#     conf[i] = [conf[i][k]/ligne for k in range(len(conf[i]))]
-
-# categorie = ["left","none","right"]
-
-# sn.heatmap(conf,annot=True,xticklabels=categorie,yticklabels=categorie,cmap="Blues",fmt=".2%")
-# plt.title("Model Hybrid xx% Accuracy")   
-# plt.xlabel("Action Thought")
-# plt.ylabel("Predicted Action")
+# fig, (ax1, ax2) = plt.subplots(1, 2)
+# ax1.plot([k for k in range(EPOCH)], train_accuracy, color='blue', label="Train")
+# ax1.plot([k for k in range(EPOCH)], test_accuracy, color='red', label="Test")
+# ax2.plot([k for k in range(EPOCH)], train_loss, color='blue', label="Train")
+# ax2.plot([k for k in range(EPOCH)], test_loss, color='red', label="Test")
+# ax1.legend(facecolor='white')
+# ax2.legend(facecolor='white')
+# ax1.set(xlabel="Epoch", ylabel="Accuracy")
+# ax2.set(xlabel="Epoch", ylabel="Loss")
+# fig.canvas.draw()
 # plt.show()
+
+############################# TESTING THE MODEL #############################################
+
+model = Model().cuda()
+model.load_state_dict(torch.load("best_model/hybrid/H_E_01-A_40.48%-L_1.097.pth"))
+model.eval()
+
+preds = []
+labels = []
+
+with torch.no_grad():
+            for input,label in testloader:
+                input,label = input.cuda() ,label.cuda()
+                opt.zero_grad()
+                output = model(input)
+                pred=torch.zeros((len(output)))
+
+                for k in range(len(output)):
+                    pred[k] = torch.argmax(output[k])
+                if preds == []:
+                    preds = pred
+                    labels = label
+                else:
+                    preds = torch.cat((preds,pred),0)
+                    labels = torch.cat((labels,label),0)
+
+conf = confusion_matrix(labels.cpu().data.numpy(), preds.cpu().data.numpy())
+conf = conf.astype('float')
+for i in range(len(conf)):
+    ligne = 0
+    for j in range(len(conf[i])):
+        ligne += conf[i][j]
+    
+    conf[i] = [conf[i][k]/ligne for k in range(len(conf[i]))]
+
+categorie = ["left","none","right"]
+
+sn.heatmap(conf,annot=True,xticklabels=categorie,yticklabels=categorie,cmap="Blues",fmt=".2%")
+plt.title("Model Hybrid xx% Accuracy")   
+plt.xlabel("Action Thought")
+plt.ylabel("Predicted Action")
+plt.show()

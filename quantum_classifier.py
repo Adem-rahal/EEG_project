@@ -178,8 +178,6 @@ def create_data(starting_dir="data") -> int :
 
     return X[:int(len(X)*FRACTION)], y[:int(len(X)*FRACTION)]    #To not load the full dataset when trying quick changes
 
-
-
 ##################################### MODEL INITIALISATION ##########################################################
 
 X_TRAIN, Y_TRAIN = create_data("data")                               
@@ -266,24 +264,24 @@ plt.show()
 #                 pred=torch.zeros((len(output)))
 
 #                 for k in range(len(output)):
-#                     pred[k]=torch.argmax(output[k])
-#                 if preds==[]:
-#                     preds=pred
-#                     labels=label
+#                     pred[k] = torch.argmax(output[k])
+#                 if preds == []:
+#                     preds = pred
+#                     labels = label
 #                 else:
-#                     preds= torch.cat((preds,pred),0)
-#                     labels= torch.cat((labels,label),0)
+#                     preds = torch.cat((preds,pred),0)
+#                     labels = torch.cat((labels,label),0)
 
 # conf = confusion_matrix(labels.cpu().data.numpy(), preds.cpu().data.numpy())
-# conf =conf.astype('float')
+# conf = conf.astype('float')
 # for i in range(len(conf)):
-#     ligne=0
+#     ligne = 0
 #     for j in range(len(conf[i])):
-#         ligne+=conf[i][j]
+#         ligne += conf[i][j]
     
-#     conf[i]=[conf[i][k]/ligne for k in range(len(conf[i]))]
+#     conf[i] = [conf[i][k]/ligne for k in range(len(conf[i]))]
 
-# categorie=["left","none","right"]
+# categorie = ["left","none","right"]
 
 # sn.heatmap(conf,annot=True,xticklabels=categorie,yticklabels=categorie,cmap="Blues",fmt=".2%")
 # plt.title("Quantum Model xx% Accuracy")   
