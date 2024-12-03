@@ -1,4 +1,5 @@
-﻿# EEG_project
+﻿# EEG_project Quantum vs Classical
+ 
 
 
 Classical Computing vs Quantum Computing 
